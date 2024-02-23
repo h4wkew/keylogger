@@ -12,5 +12,5 @@ pub fn send_buffer_key(socket: &UdpSocket, buffer: &Vec<rdev::Key>) {
         .collect::<Vec<String>>()
         .join(" ");
 
-    socket.send_to(key_str.as_bytes(), SERVER);
+    let _ = socket.send_to(key_str.as_bytes(), SERVER);
 }
